@@ -11,8 +11,9 @@ public class Tile : MonoBehaviour {
 	private bool isSelected = false;
 
 	private Vector2[] adjacentDirections = new Vector2[] { Vector2.up, Vector2.down, Vector2.left, Vector2.right };
+    private bool matchFound = false;
 
-	void Awake() {
+    void Awake() {
 		render = GetComponent<SpriteRenderer>();
     }
 
@@ -30,31 +31,33 @@ public class Tile : MonoBehaviour {
 	}
     void OnMouseDown()
     {
-        // 1
+        
         if (render.sprite == null || BoardManager.instance.IsShifting)
         {
             return;
         }
 
         if (isSelected)
-        { // 2 Is it already selected?
+        { //  Is it already selected?
             Deselect();
         }
         else
         {
             if (previousSelected == null)
-            { // 3 Is it the first tile selected?
+            { // Is it the first tile selected?
                 Select();
             }
             else
             {
                 if (GetAllAdjacentTiles().Contains(previousSelected.gameObject))
-                { // 1
-                    SwapSprite(previousSelected.render); // 2
+                { 
+                    SwapSprite(previousSelected.render);
+                    previousSelected.ClearAllMatches();
                     previousSelected.Deselect();
+                    ClearAllMatches();
                 }
                 else
-                { // 3
+                { 
                     previousSelected.GetComponent<Tile>().Deselect();
                     Select();
                 }
@@ -62,16 +65,16 @@ public class Tile : MonoBehaviour {
         }
     }
     public void SwapSprite(SpriteRenderer render2)
-    { // 1
+    { 
         if (render.sprite == render2.sprite)
-        { // 2
+        { 
             return;
         }
 
-        Sprite tempSprite = render2.sprite; // 3
-        render2.sprite = render.sprite; // 4
-        render.sprite = tempSprite; // 5
-        SFXManager.instance.PlaySFX(Clip.Swap); // 6
+        Sprite tempSprite = render2.sprite; 
+        render2.sprite = render.sprite; 
+        render.sprite = tempSprite; 
+        SFXManager.instance.PlaySFX(Clip.Swap); 
     }
     private GameObject GetAdjacent(Vector2 castDir)
     {
@@ -90,6 +93,47 @@ public class Tile : MonoBehaviour {
             adjacentTiles.Add(GetAdjacent(adjacentDirections[i]));
         }
         return adjacentTiles;
+    }
+    private List<GameObject> FindMatch(Vector2 castDir)
+    {
+        List<GameObject> matchingTiles = new List<GameObject>();
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, castDir);
+        while (hit.collider != null && hit.collider.GetComponent<SpriteRenderer>().sprite == render.sprite)
+        {
+            matchingTiles.Add(hit.collider.gameObject);
+            hit = Physics2D.Raycast(hit.collider.transform.position, castDir);
+        }
+        return matchingTiles;
+    }
+    private void ClearMatch(Vector2[] paths) 
+    {
+        List<GameObject> matchingTiles = new List<GameObject>(); // 2
+        for (int i = 0; i < paths.Length; i++) 
+        {
+            matchingTiles.AddRange(FindMatch(paths[i]));
+        }
+        if (matchingTiles.Count >= 2) 
+        {
+            for (int i = 0; i < matchingTiles.Count; i++) 
+            {
+                matchingTiles[i].GetComponent<SpriteRenderer>().sprite = null;
+            }
+            matchFound = true; 
+        }
+    }
+    public void ClearAllMatches()
+    {
+        if (render.sprite == null)
+            return;
+
+        ClearMatch(new Vector2[2] { Vector2.left, Vector2.right });
+        ClearMatch(new Vector2[2] { Vector2.up, Vector2.down });
+        if (matchFound)
+        {
+            render.sprite = null;
+            matchFound = false;
+            SFXManager.instance.PlaySFX(Clip.Clear);
+        }
     }
 
 }
