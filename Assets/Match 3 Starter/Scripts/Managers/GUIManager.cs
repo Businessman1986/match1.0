@@ -1,24 +1,4 @@
-﻿/*
- * Copyright (c) 2017 Razeware LLC
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+﻿
 
 using UnityEngine;
 using UnityEngine.UI;
@@ -35,9 +15,44 @@ public class GUIManager : MonoBehaviour {
 	public Text moveCounterTxt;
 
 	private int score;
+	private float gameDuration = 60f;  // Duration of the game in seconds
+	private float timeRemaining;
+	public int Score
+	{
+		get
+		{
+			return score;
+		}
 
+		set
+		{
+			score = value;
+			scoreTxt.text = score.ToString();
+		}
+	}
 	void Awake() {
-		instance = GetComponent<GUIManager>();
+		instance = this;
+		timeRemaining = gameDuration;
+	}
+	void Start()
+	{
+		StartCoroutine(GameTimer());
+	}
+	IEnumerator GameTimer()
+	{
+		while (timeRemaining > 0)
+		{
+			yield return new WaitForSeconds(1f);
+			timeRemaining--;
+			UpdateTimerText();
+		}
+		GameOver();
+	}
+	void UpdateTimerText()
+	{
+		int minutes = Mathf.FloorToInt(timeRemaining / 60F);
+		int seconds = Mathf.FloorToInt(timeRemaining % 60F);
+		moveCounterTxt.text = string.Format("{0:0}:{1:00}", minutes, seconds);
 	}
 
 	// Show the game over panel
