@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 
 public class GUIManager : MonoBehaviour
 {
@@ -11,10 +12,12 @@ public class GUIManager : MonoBehaviour
     public Text highScoreTxt;
     public Text scoreTxt;
     public Text moveCounterTxt;
-    public RecordsManager recordsManager;  // Добавьте ссылку на RecordsManager
+
+    public GameObject recordsPanel;  // Панель для отображения рекордов
+    public Text recordsText;         // Текст для отображения рекордов
 
     private int score;
-    private float gameDuration = 60f;  // Длительность игры в секундах
+    private float gameDuration = 60f;  // Duration of the game in seconds
     private float timeRemaining;
 
     public int Score
@@ -63,8 +66,9 @@ public class GUIManager : MonoBehaviour
     public void GameOver()
     {
         GameManager.instance.gameOver = true;
-
         gameOverPanel.SetActive(true);
+
+        UpdateHighScores(score);
 
         if (score > PlayerPrefs.GetInt("HighScore"))
         {
@@ -77,11 +81,61 @@ public class GUIManager : MonoBehaviour
         }
 
         yourScoreTxt.text = score.ToString();
+    }
 
-        // Добавить текущий счёт в рекорды
-        if (recordsManager != null)
+    private void UpdateHighScores(int newScore)
+    {
+        List<int> highScores = new List<int>();
+
+        // Load existing high scores
+        for (int i = 0; i < 10; i++)
         {
-            recordsManager.AddScore(score);
+            if (PlayerPrefs.HasKey("HighScore" + i))
+            {
+                highScores.Add(PlayerPrefs.GetInt("HighScore" + i));
+            }
         }
+
+        // Add the new score
+        highScores.Add(newScore);
+        highScores.Sort((a, b) => b.CompareTo(a)); // Sort descending
+
+        // Keep only the top 10 scores
+        if (highScores.Count > 10)
+        {
+            highScores = highScores.GetRange(0, 10);
+        }
+
+        // Save the updated high scores
+        for (int i = 0; i < highScores.Count; i++)
+        {
+            PlayerPrefs.SetInt("HighScore" + i, highScores[i]);
+        }
+
+        // Display the high scores in the records panel
+        DisplayHighScores();
+    }
+
+    private void DisplayHighScores()
+    {
+        recordsText.text = "Top 10 Scores:\n";
+        for (int i = 0; i < 10; i++)
+        {
+            if (PlayerPrefs.HasKey("HighScore" + i))
+            {
+                recordsText.text += (i + 1) + ". " + PlayerPrefs.GetInt("HighScore" + i) + "\n";
+            }
+        }
+    }
+
+    public void ShowRecords()
+    {
+        recordsPanel.SetActive(true);
+        DisplayHighScores(); // Update display each time the panel is shown
+    }
+
+    public void HideRecords()
+    {
+        recordsPanel.SetActive(false);
     }
 }
